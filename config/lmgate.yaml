@@ -1,0 +1,13 @@
+server:
+  port: 8081
+
+auth:
+  allowlist_path: /data/allowlist.csv
+  poll_interval_seconds: 30
+
+stats:
+  output_path: /data/stats.jsonl
+  flush_interval_seconds: 10
+
+logging:
+  level: INFO
