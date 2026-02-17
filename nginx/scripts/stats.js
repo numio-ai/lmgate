@@ -19,7 +19,7 @@ function accumulate(r, data, flags) {
             client_ip: r.remoteAddress,
             method: r.variables.request_method,
             uri: r.variables.request_uri,
-            host: r.headersOut["X-Upstream-Host"] || "",
+            host: r.variables.upstream_host || "",
             status: r.status,
             auth_key_header: r.headersIn["Authorization"] || "",
             auth_x_api_key: r.headersIn["X-Api-Key"] || "",

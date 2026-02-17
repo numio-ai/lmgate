@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +44,16 @@ async def stats(request: web.Request) -> web.Response:
     return web.Response(status=200, text="ok")
 
 
+async def _poll_allowlist(allowlist: AllowList, interval: int) -> None:
+    """Periodically check allow-list file for changes and reload."""
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            allowlist.reload_if_changed()
+        except Exception:
+            log.warning("Allow-list reload failed", exc_info=True)
+
+
 def create_app(config: dict[str, Any]) -> web.Application:
     app = web.Application()
     app["config"] = config
@@ -54,10 +65,22 @@ def create_app(config: dict[str, Any]) -> web.Application:
     stats_writer = StatsWriter(config["stats"]["output_path"])
     app["stats_writer"] = stats_writer
 
+    async def on_startup(app: web.Application) -> None:
+        interval = config["auth"]["poll_interval_seconds"]
+        app["_allowlist_poll_task"] = asyncio.create_task(
+            _poll_allowlist(app["allowlist"], interval)
+        )
+
     async def on_cleanup(app: web.Application) -> None:
+        app["_allowlist_poll_task"].cancel()
+        try:
+            await app["_allowlist_poll_task"]
+        except asyncio.CancelledError:
+            pass
         log.info("Shutting down: flushing stats writer")
         app["stats_writer"].close()
 
+    app.on_startup.append(on_startup)
     app.on_cleanup.append(on_cleanup)
 
     app.router.add_get("/auth", auth)

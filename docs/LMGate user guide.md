@@ -105,7 +105,9 @@ LMGate routes requests by URL path prefix. nginx strips the prefix before forwar
 | `/openai/` | `https://api.openai.com/` |
 | `/anthropic/` | `https://api.anthropic.com/` |
 | `/google/` | `https://aiplatform.googleapis.com/` |
-| `/bedrock/` | `https://bedrock-runtime.<region>.amazonaws.com/` |
+| `/bedrock/` | `https://bedrock-runtime.us-east-1.amazonaws.com/` |
+
+The Bedrock upstream defaults to `us-east-1`. To use a different region, edit the `bedrock` upstream and `/bedrock/` location block in `nginx/nginx.conf`.
 
 The request body, headers, and query parameters are forwarded unchanged. This means SigV4-signed AWS requests pass through without breaking the signature.
 

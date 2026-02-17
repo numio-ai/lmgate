@@ -65,8 +65,36 @@ Deliver a working LMGate prototype that:
 
 Built using strict TDD (Red-Green cycle) across 5 steps:
 
-1. **Project skeleton** — pyproject.toml, Docker configs, nginx.conf, njs scripts
-2. **AuthZ** — allow-list CSV loading, key extraction (Bearer/SigV4/x-api-key), /auth endpoint
-3. **Stats collection** — provider detection, token extraction, JSONL writer with rotation, /stats endpoint
-4. **Integration tests** — full request flow through auth + stats via aiohttp test client
-5. **Polish** — config loading tests, graceful shutdown (on_cleanup flush), logging, example data files
+### Step 1: Project skeleton + Docker setup
+- `pyproject.toml` with dependencies
+- `lmgate/config.py`: YAML + env var config loading
+- `nginx/nginx.conf`: basic reverse proxy config
+- Both Dockerfiles
+- `docker-compose.yaml`
+- Verify: containers start and nginx proxies a request (no auth, no stats)
+
+### Step 2: AuthZ — allow-list + /auth endpoint
+- `lmgate/allowlist.py`: CSV loading, polling, atomic reload
+- `lmgate/auth.py`: key extraction (Bearer, x-api-key, SigV4)
+- `lmgate/server.py`: `/auth` and `/health` endpoints
+- nginx `auth_request` directive
+- `nginx/scripts/auth.js`: subrequest callout
+- `test_auth.py`, `test_allowlist.py`
+- Verify: authorized requests pass, unauthorized return 403
+
+### Step 3: Stats collection — njs POST + Python /stats endpoint
+- `nginx/scripts/stats.js`: response body accumulation + POST to `/stats`
+- `lmgate/stats.py`: `/stats` endpoint, entry accumulation, JSONL flush
+- `lmgate/providers.py`: token extraction per provider
+- `test_stats.py`, `test_providers.py`
+- Verify: proxied requests produce stats entries in JSONL
+
+### Step 4: Integration tests
+- `tests/integration/test_proxy.py`: full flow via aiohttp test client
+- End-to-end verification of auth + proxying + stats
+
+### Step 5: Polish
+- Graceful shutdown (on_cleanup flush)
+- Config loading tests
+- Logging configuration
+- Example config and allow-list files

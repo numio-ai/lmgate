@@ -1,4 +1,4 @@
-# LMGate — Functional & Non-Functional Specification
+# LMGate — Functional Specification
 
 ## 1. Overview
 
