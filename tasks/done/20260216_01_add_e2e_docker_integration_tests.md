@@ -1,5 +1,5 @@
 ---
-status: backlog
+status: done
 ---
 
 # Add End-to-End Docker Integration Tests

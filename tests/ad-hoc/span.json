@@ -1,0 +1,25 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          { "key": "service.name", "value": { "stringValue": "curl-test" } }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": { "name": "manual-test" },
+          "spans": [
+            {
+              "traceId": "71699b6fe85982c7c8995ea3d9c95df3",
+              "spanId": "3c191d03fa8be066",
+              "name": "curl-span",
+              "kind": 2,
+              "status": { "code": 1 }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
