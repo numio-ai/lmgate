@@ -17,12 +17,6 @@ class TestDetectProvider:
     def test_google(self) -> None:
         assert detect_provider("aiplatform.googleapis.com") == "google"
 
-    def test_bedrock(self) -> None:
-        assert detect_provider("bedrock-runtime.us-east-1.amazonaws.com") == "bedrock"
-
-    def test_bedrock_other_region(self) -> None:
-        assert detect_provider("bedrock-runtime.eu-west-1.amazonaws.com") == "bedrock"
-
     def test_unknown_host(self) -> None:
         assert detect_provider("unknown.example.com") == "unknown"
 
@@ -74,22 +68,6 @@ class TestExtractTokensGoogle:
     def test_missing_usage_metadata(self) -> None:
         body = json.dumps({"candidates": []})
         inp, out = extract_tokens("google", body)
-        assert inp is None
-        assert out is None
-
-
-class TestExtractTokensBedrock:
-    def test_standard_response(self) -> None:
-        body = json.dumps({
-            "usage": {"inputTokens": 400, "outputTokens": 120}
-        })
-        inp, out = extract_tokens("bedrock", body)
-        assert inp == 400
-        assert out == 120
-
-    def test_missing_usage(self) -> None:
-        body = json.dumps({"output": {}})
-        inp, out = extract_tokens("bedrock", body)
         assert inp is None
         assert out is None
 

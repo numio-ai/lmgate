@@ -21,8 +21,7 @@ def allowlist_path(tmp_path: Path) -> Path:
     path.write_text(
         "id,api_key,owner,added\n"
         "1,sk-validkey123,team-alpha,2025-01-15\n"
-        "2,AKIAIOSFODNN7EXAMPLE,team-beta,2025-02-01\n"
-        "3,sk-anthropic-key99,team-gamma,2025-03-01\n"
+        "2,sk-anthropic-key99,team-gamma,2025-03-01\n"
     )
     return path
 
@@ -60,22 +59,6 @@ class TestAuthFlow:
         assert resp.status == 200
         assert resp.headers["X-LMGate-ID"] == "1"
 
-    async def test_sigv4_auth_accepted(self, aiohttp_client, app) -> None:
-        client = await aiohttp_client(app)
-        resp = await client.get(
-            "/auth",
-            headers={
-                "Authorization": (
-                    "AWS4-HMAC-SHA256 "
-                    "Credential=AKIAIOSFODNN7EXAMPLE/20250601/us-east-1/bedrock/aws4_request, "
-                    "SignedHeaders=host;x-amz-date, "
-                    "Signature=abcdef1234567890"
-                )
-            },
-        )
-        assert resp.status == 200
-        assert resp.headers["X-LMGate-ID"] == "2"
-
     async def test_unknown_key_rejected(self, aiohttp_client, app) -> None:
         client = await aiohttp_client(app)
         resp = await client.get(
@@ -89,7 +72,7 @@ class TestAuthFlow:
             "/auth", headers={"x-api-key": "sk-anthropic-key99"}
         )
         assert resp.status == 200
-        assert resp.headers["X-LMGate-ID"] == "3"
+        assert resp.headers["X-LMGate-ID"] == "2"
 
     async def test_no_credentials_rejected(self, aiohttp_client, app) -> None:
         client = await aiohttp_client(app)
@@ -145,7 +128,7 @@ class TestStatsFlow:
             "status": 200,
             "auth_key_header": "",
             "auth_x_api_key": "sk-anthropic-key99",
-            "lmgate_internal_id": "3",
+            "lmgate_internal_id": "2",
             "response_body": json.dumps({
                 "model": "claude-sonnet-4-5-20250929",
                 "usage": {"input_tokens": 200, "output_tokens": 100},
@@ -158,32 +141,6 @@ class TestStatsFlow:
         assert entry["provider"] == "anthropic"
         assert entry["input_tokens"] == 200
         assert entry["output_tokens"] == 100
-
-    async def test_bedrock_stats_written(
-        self, aiohttp_client, app, stats_path: Path
-    ) -> None:
-        client = await aiohttp_client(app)
-        payload = {
-            "timestamp": "2025-06-15T10:32:00Z",
-            "client_ip": "10.0.0.3",
-            "method": "POST",
-            "uri": "/model/invoke",
-            "host": "bedrock-runtime.us-east-1.amazonaws.com",
-            "status": 200,
-            "auth_key_header": "AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/20250601/us-east-1/bedrock/aws4_request, SignedHeaders=host, Signature=abc",
-            "auth_x_api_key": "",
-            "lmgate_internal_id": "2",
-            "response_body": json.dumps({
-                "usage": {"inputTokens": 400, "outputTokens": 120},
-            }),
-        }
-        resp = await client.post("/stats", json=payload)
-        assert resp.status == 200
-
-        entry = json.loads(stats_path.read_text().strip())
-        assert entry["provider"] == "bedrock"
-        assert entry["input_tokens"] == 400
-        assert entry["output_tokens"] == 120
 
     async def test_google_vertex_stats_written(
         self, aiohttp_client, app, stats_path: Path

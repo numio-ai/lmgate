@@ -4,14 +4,12 @@ Token extraction mapping per design document:
 - OpenAI:   usage.prompt_tokens / usage.completion_tokens
 - Anthropic: usage.input_tokens / usage.output_tokens
 - Google:   usageMetadata.promptTokenCount / usageMetadata.candidatesTokenCount
-- Bedrock:  usage.inputTokens / usage.outputTokens
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import re
 
 log = logging.getLogger(__name__)
 
@@ -21,18 +19,12 @@ _HOST_TO_PROVIDER = {
     "aiplatform.googleapis.com": "google",
 }
 
-_BEDROCK_RE = re.compile(r"bedrock-runtime\..+\.amazonaws\.com")
-
 
 def detect_provider(host: str) -> str:
     """Detect LLM provider from the upstream host string."""
     if not host:
         return "unknown"
-    if host in _HOST_TO_PROVIDER:
-        return _HOST_TO_PROVIDER[host]
-    if _BEDROCK_RE.match(host):
-        return "bedrock"
-    return "unknown"
+    return _HOST_TO_PROVIDER.get(host, "unknown")
 
 
 def _parse_json(body: str) -> dict | None:
@@ -80,12 +72,6 @@ def extract_tokens(provider: str, response_body: str) -> tuple[int | None, int |
             if not meta:
                 return None, None
             return meta.get("promptTokenCount"), meta.get("candidatesTokenCount")
-
-        if provider == "bedrock":
-            usage = parsed.get("usage")
-            if not usage:
-                return None, None
-            return usage.get("inputTokens"), usage.get("outputTokens")
 
     except (AttributeError, TypeError):
         log.debug("Failed to extract tokens for provider=%s", provider)

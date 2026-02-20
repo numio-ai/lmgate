@@ -5,7 +5,7 @@ This guide covers how to deploy, configure, and operate LMGate — a transparent
 ## Prerequisites
 
 - Docker and Docker Compose
-- Access to at least one LLM provider API (OpenAI, Anthropic, Google Vertex AI, or AWS Bedrock)
+- Access to at least one LLM provider API (OpenAI, Anthropic, or Google Vertex AI)
 - API keys that your client applications will use
 
 ## Quick Start
@@ -18,7 +18,6 @@ Create a CSV file at `data/allowlist.csv` with the API keys you want to authoriz
 id,api_key,owner,added
 1,sk-proj-your-openai-key-here,dev-team,2026-02-16
 2,sk-ant-your-anthropic-key-here,dev-team,2026-02-16
-3,AKIAIOSFODNN7EXAMPLE,aws-team,2026-02-16
 ```
 
 All four columns are required. The `id` field is used internally for correlation in stats records.
@@ -105,11 +104,8 @@ LMGate routes requests by URL path prefix. nginx strips the prefix before forwar
 | `/openai/` | `https://api.openai.com/` |
 | `/anthropic/` | `https://api.anthropic.com/` |
 | `/google/` | `https://aiplatform.googleapis.com/` |
-| `/bedrock/` | `https://bedrock-runtime.us-east-1.amazonaws.com/` |
 
-The Bedrock upstream defaults to `us-east-1`. To use a different region, edit the `bedrock` upstream and `/bedrock/` location block in `nginx/nginx.conf`.
-
-The request body, headers, and query parameters are forwarded unchanged. This means SigV4-signed AWS requests pass through without breaking the signature.
+The request body, headers, and query parameters are forwarded unchanged to the upstream provider.
 
 ## Allow-List Management
 
@@ -140,8 +136,7 @@ The reload is atomic — in-flight requests are not affected.
 LMGate extracts the API key from request headers using this precedence:
 
 1. `Authorization: Bearer <key>` — OpenAI, Anthropic, Google
-2. `Authorization: AWS4-HMAC-SHA256 Credential=<AccessKeyId>/...` — AWS Bedrock
-3. `x-api-key` header — Alternative for some providers
+2. `x-api-key` header — Alternative for some providers
 
 The key from the request must match an `api_key` entry in the CSV exactly.
 
@@ -219,7 +214,7 @@ Each line contains:
 |-------|-------------|
 | `timestamp` | ISO-8601 time of the request |
 | `lmgate_id` | Internal ID from the allow-list `id` column |
-| `provider` | Detected provider: openai, anthropic, google, bedrock, or unknown |
+| `provider` | Detected provider: openai, anthropic, google, or unknown |
 | `endpoint` | Original request URI |
 | `model` | Model name from the response (null if not available) |
 | `status` | HTTP status code from the provider |

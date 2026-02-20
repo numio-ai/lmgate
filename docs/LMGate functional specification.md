@@ -13,17 +13,43 @@ LMGate is a two-process system:
 1. **nginx + njs** — Reverse proxy handling all client traffic. Performs authorization checks before proxying, and collects response metadata after proxying.
 2. **LMGate Python service** — Async REST API (aiohttp) that makes authorization decisions and ingests usage statistics.
 
+**Successful request flow:**
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant nginx as nginx + njs
+    participant LMGate as LMGate Service
+    participant Provider as LLM Provider
+
+    Client->>nginx: HTTP request
+    nginx->>LMGate: GET /auth (subrequest)
+    LMGate->>LMGate: API key lookup in allow-list
+    LMGate-->>nginx: 200 OK + X-LMGate-ID
+    nginx->>Provider: proxy_pass (prefix stripped, body unchanged)
+    Provider-->>nginx: response / SSE stream
+    nginx-->>Client: stream response (unbuffered)
+    Note over nginx: njs accumulates response body (≤2 MB)
+    nginx-)LMGate: POST /stats (fire-and-forget)
+    LMGate->>LMGate: Extract tokens, write JSONL
 ```
-Client ──HTTP──► nginx ──auth_request──► LMGate /auth
-                  │                         │
-                  │◄── 200 (allow) ─────────┘
-                  │
-                  ├──proxy_pass──► LLM Provider API
-                  │◄── response ──┘
-                  │
-                  ├── stream response to client
-                  │
-                  └── njs POST ──► LMGate /stats (fire-and-forget)
+
+**Auth rejection flow:**
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant nginx as nginx + njs
+    participant LMGate as LMGate Service
+
+    Client->>nginx: HTTP request
+    nginx->>LMGate: GET /auth (subrequest)
+    alt key missing or not in allow-list
+        LMGate-->>nginx: 403 Forbidden
+    else LMGate unreachable (fail closed)
+        nginx--xnginx: subrequest fails
+    end
+    nginx-->>Client: 403 Forbidden
 ```
 
 Both processes run as Docker containers via docker-compose on a single host.
@@ -35,9 +61,10 @@ Both processes run as Docker containers via docker-compose on a single host.
 | OpenAI | `api.openai.com` | `/openai/` |
 | Anthropic | `api.anthropic.com` | `/anthropic/` |
 | Google Vertex AI | `aiplatform.googleapis.com` | `/google/` |
-| AWS Bedrock | `bedrock-runtime.<region>.amazonaws.com` | `/bedrock/` |
 
 Clients call LMGate using the provider path prefix. nginx strips the prefix and proxies to the real provider host. For example, a request to `http://lmgate:8080/openai/v1/chat/completions` is proxied to `https://api.openai.com/v1/chat/completions`.
+
+> **Note — AWS Bedrock:** Bedrock is excluded from MVP. AWS SigV4 request signing includes the URI path and `Host` header in the signature. Any reverse proxy that rewrites these (as LMGate does via prefix stripping and Host header rewriting) invalidates the signature, causing AWS to reject the request. Supporting Bedrock requires a gateway mode where LMGate holds AWS credentials and signs requests server-side — planned for a future release.
 
 ## 4. Functional Requirements
 
@@ -45,7 +72,7 @@ Clients call LMGate using the provider path prefix. nginx strips the prefix and 
 
 - Forward HTTP requests from clients to LLM provider endpoints unchanged.
 - Return provider responses to clients unchanged.
-- Preserve all headers and body content — SigV4 signed requests pass through intact.
+- Preserve all headers and body content.
 - Support SSE streaming: nginx streams response chunks to the client as they arrive, with no buffering delay.
 - The njs layer accumulates response body (up to 2 MB) for stats extraction without blocking client streaming.
 
@@ -56,8 +83,7 @@ LMGate extracts the API key from each incoming request and checks it against a f
 **Key extraction precedence** (first valid match wins):
 
 1. `Authorization: Bearer <key>` — Used by OpenAI, Anthropic, Google
-2. `Authorization: AWS4-HMAC-SHA256 Credential=<AccessKeyId>/...` — Used by AWS Bedrock (Access Key ID is extracted)
-3. `x-api-key` header — Alternative header supported by some providers
+2. `x-api-key` header — Alternative header supported by some providers
 
 **Behavior rules:**
 - Missing key → 403
@@ -98,7 +124,7 @@ LMGate collects metadata from every proxied request and writes it to an append-o
 |-------|-------------|
 | `timestamp` | ISO-8601 timestamp of the request |
 | `lmgate_id` | Internal ID from the allow-list |
-| `provider` | Detected provider name (openai, anthropic, google, bedrock, unknown) |
+| `provider` | Detected provider name (openai, anthropic, google, unknown) |
 | `endpoint` | Request URI path |
 | `model` | Model name extracted from response (if available) |
 | `status` | HTTP response status code |
@@ -114,7 +140,6 @@ LMGate collects metadata from every proxied request and writes it to an append-o
 | OpenAI | `usage.prompt_tokens` | `usage.completion_tokens` |
 | Anthropic | `usage.input_tokens` | `usage.output_tokens` |
 | Google Vertex AI | `usageMetadata.promptTokenCount` | `usageMetadata.candidatesTokenCount` |
-| AWS Bedrock | `usage.inputTokens` | `usage.outputTokens` |
 
 **SSE/streaming responses:** The njs layer accumulates the complete streamed response body. Token counts are typically found in the final SSE event. Best-effort extraction — if not found, the stats entry records null token counts.
 
@@ -172,8 +197,6 @@ Values are automatically coerced to the appropriate type (boolean, integer, floa
 |----------|--------|
 | HTTP/1.1 | Supported |
 | SSE (streaming) | Supported (native nginx streaming) |
-| AWS EventStream | Supported (transparent byte streaming) |
-| AWS SigV4 passthrough | Supported (headers/body untouched) |
 | HTTP/2 (client-facing) | Post-MVP (nginx config-only change) |
 | gRPC | Out of scope |
 
@@ -187,6 +210,7 @@ Values are automatically coerced to the appropriate type (boolean, integer, floa
 
 ## 8. Out of Scope (MVP)
 
+- AWS Bedrock (SigV4 incompatible with reverse proxy path/host rewriting — requires gateway mode)
 - TLS termination (planned as nginx configuration change)
 - Dashboard or stats query API
 - Multi-host / HA deployment
