@@ -1,0 +1,11 @@
+services:
+  # Override lmgate to use test data directory
+  lmgate:
+    volumes:
+      - ./config:/app/config:ro
+      - ./tests/e2e/data:/data
+
+  # Override nginx to use test data directory (production nginx.conf from image)
+  nginx:
+    volumes:
+      - ./tests/e2e/data:/data

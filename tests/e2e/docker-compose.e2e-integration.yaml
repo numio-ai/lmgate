@@ -8,7 +8,7 @@ services:
   # Override nginx to use e2e config pointing to mock upstream
   nginx:
     volumes:
-      - ./tests/e2e/nginx.e2e.conf:/etc/nginx/nginx.conf:ro
+      - ./tests/e2e/nginx.e2e-integration.conf:/etc/nginx/nginx.conf:ro
       - ./tests/e2e/data:/data
     depends_on:
       lmgate:

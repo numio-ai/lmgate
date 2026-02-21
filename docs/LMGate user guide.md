@@ -322,6 +322,78 @@ docker compose ps
 docker compose logs lmgate
 ```
 
+## Development & Testing
+
+LMGate has three test layers. Unit and integration tests require only Python; the e2e suites require Docker.
+
+### Unit & integration tests
+
+```bash
+python -m pytest tests/unit/ tests/integration/ -v
+```
+
+These run entirely in-process — no Docker, no network calls.
+
+### E2E integration tests (mock upstream)
+
+Runs the full Docker Compose stack (nginx + lmgate + mock upstream). Validates the auth → proxy → stats pipeline without calling real LLM APIs.
+
+```bash
+./scripts/run-e2e-integration-tests.sh
+```
+
+The script builds the stack, waits for health, runs `tests/e2e/test_e2e_integration.py`, and tears everything down.
+
+### E2E system tests (real APIs)
+
+Runs the full Docker Compose stack with the production nginx config and sends real requests to OpenAI and Anthropic. Validates that stats entries (provider, model, token counts) are correctly extracted from actual API responses.
+
+**Setup:**
+
+1. Copy `.env_example` to `.env` and populate with real API keys:
+
+   ```bash
+   cp .env_example .env
+   # Edit .env with your OPENAI_API_KEY and ANTHROPIC_API_KEY
+   ```
+
+2. Run the suite:
+
+   ```bash
+   ./scripts/run-e2e-system-tests.sh
+   ```
+
+The script sources `.env`, temporarily adds the API keys to the test allow-list, starts the stack, runs `tests/e2e/test_e2e_system.py`, and tears everything down. The allow-list is restored to its original state on exit.
+
+**Key details:**
+- Tests are individually skipped (not failed) if their API key is missing
+- Minimal prompts and cheapest models (`gpt-4o-mini`, `claude-3-haiku-20240307`) to minimise cost
+- Requires network access to `api.openai.com` and `api.anthropic.com`
+
+### Test file layout
+
+```
+tests/
+├── unit/                              # Pure Python unit tests
+│   ├── test_allowlist.py
+│   ├── test_auth.py
+│   ├── test_config.py
+│   ├── test_providers.py
+│   └── test_stats.py
+├── integration/                       # Python app integration tests
+│   └── test_proxy.py
+└── e2e/                               # Docker Compose end-to-end tests
+    ├── test_e2e_integration.py        # Mock upstream tests
+    ├── test_e2e_system.py             # Real API tests
+    ├── docker-compose.e2e-integration.yaml
+    ├── docker-compose.e2e-system.yaml
+    ├── nginx.e2e-integration.conf
+    ├── Dockerfile.mock
+    ├── mock_upstream.py
+    └── data/
+        └── allowlist.csv
+```
+
 ## Security Notes
 
 - API keys in stats are masked to the last 6 characters. Full keys are never written to the stats file.
