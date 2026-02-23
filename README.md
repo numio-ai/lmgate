@@ -54,6 +54,19 @@ curl http://localhost:8080/anthropic/v1/messages \
   -d '{"model":"claude-sonnet-4-20250514","max_tokens":32,"messages":[{"role":"user","content":"Say hello in one sentence."}]}'
 ```
 
+```bash
+curl http://localhost:8080/openai/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-proj-your-openai-key-here" \
+  -d '{
+    "model": "gpt-4o-mini",
+    "messages": [
+      {"role": "user", "content": "Say this is a test"}
+    ],
+    "temperature": 0
+  }'
+```
+
 You get the normal Anthropic response. A key not in the allow-list returns HTTP 403:
 
 ```json

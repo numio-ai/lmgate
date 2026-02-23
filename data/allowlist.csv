@@ -1,2 +1,4 @@
 id,api_key,owner,added
-1,sk-example-key-replace-me,example-team,2025-01-15
+1,sk-ant-your-anthropic-key-here,demo-team,2026-02-22
+2,sk-proj-your-openai-key-here,demo-team,2026-02-22
+3,sk-your-etc-llm-provider-key-here,example-team,2026-02-22
