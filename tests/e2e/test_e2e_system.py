@@ -11,8 +11,8 @@ The stack must already be running (started by run-e2e-system-tests.sh).
 import json
 import os
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 
 import pytest
 

@@ -8,8 +8,8 @@ auth -> proxy -> stats pipeline.
 import json
 import os
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 
 NGINX_BASE = os.environ.get("E2E_NGINX_URL", "http://localhost:8080")
 VALID_KEY = "sk-test-valid-key-123456"
@@ -130,4 +130,5 @@ class TestStatsRecording:
         assert entry["model"] == "gpt-4"
         assert entry["input_tokens"] == 10
         assert entry["output_tokens"] == 5
-        assert entry["masked_key"] == "123456"  # last 6 chars of sk-test-valid-key-123456
+        # last 6 chars of sk-test-valid-key-123456
+        assert entry["masked_key"] == "123456"

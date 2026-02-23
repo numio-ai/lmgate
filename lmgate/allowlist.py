@@ -56,9 +56,7 @@ class AllowList:
                 raise ValueError(f"Empty or invalid CSV: {path}")
             missing = REQUIRED_COLUMNS - set(reader.fieldnames)
             if missing:
-                raise ValueError(
-                    f"CSV missing required columns: {sorted(missing)}"
-                )
+                raise ValueError(f"CSV missing required columns: {sorted(missing)}")
             entries: dict[str, AllowListEntry] = {}
             for row in reader:
                 entry = AllowListEntry(

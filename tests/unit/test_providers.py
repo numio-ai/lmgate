@@ -2,9 +2,7 @@
 
 import json
 
-import pytest
-
-from lmgate.providers import detect_provider, extract_tokens, extract_model
+from lmgate.providers import detect_provider, extract_model, extract_tokens
 
 
 class TestDetectProvider:
@@ -26,9 +24,7 @@ class TestDetectProvider:
 
 class TestExtractTokensOpenAI:
     def test_standard_response(self) -> None:
-        body = json.dumps({
-            "usage": {"prompt_tokens": 150, "completion_tokens": 80}
-        })
+        body = json.dumps({"usage": {"prompt_tokens": 150, "completion_tokens": 80}})
         inp, out = extract_tokens("openai", body)
         assert inp == 150
         assert out == 80
@@ -42,9 +38,7 @@ class TestExtractTokensOpenAI:
 
 class TestExtractTokensAnthropic:
     def test_standard_response(self) -> None:
-        body = json.dumps({
-            "usage": {"input_tokens": 200, "output_tokens": 100}
-        })
+        body = json.dumps({"usage": {"input_tokens": 200, "output_tokens": 100}})
         inp, out = extract_tokens("anthropic", body)
         assert inp == 200
         assert out == 100
@@ -58,9 +52,9 @@ class TestExtractTokensAnthropic:
 
 class TestExtractTokensGoogle:
     def test_standard_response(self) -> None:
-        body = json.dumps({
-            "usageMetadata": {"promptTokenCount": 300, "candidatesTokenCount": 50}
-        })
+        body = json.dumps(
+            {"usageMetadata": {"promptTokenCount": 300, "candidatesTokenCount": 50}}
+        )
         inp, out = extract_tokens("google", body)
         assert inp == 300
         assert out == 50
@@ -94,8 +88,9 @@ class TestExtractTokensEdgeCases:
         sse_body = (
             'data: {"choices":[]}\n\n'
             'data: {"choices":[]}\n\n'
-            'data: {"choices":[],"usage":{"prompt_tokens":100,"completion_tokens":50}}\n\n'
-            'data: [DONE]\n\n'
+            'data: {"choices":[],"usage":'
+            '{"prompt_tokens":100,"completion_tokens":50}}\n\n'
+            "data: [DONE]\n\n"
         )
         inp, out = extract_tokens("openai", sse_body)
         assert inp == 100

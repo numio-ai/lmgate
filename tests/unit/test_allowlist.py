@@ -1,6 +1,5 @@
 """Tests for lmgate.allowlist — CSV loading, polling, atomic reload."""
 
-import csv
 import time
 from pathlib import Path
 
@@ -72,8 +71,7 @@ class TestAllowListReload:
         # Overwrite file with different content
         time.sleep(0.05)  # ensure mtime differs
         csv_file.write_text(
-            "id,api_key,owner,added\n"
-            "3,sk-newkey999,team-gamma,2025-03-01\n"
+            "id,api_key,owner,added\n3,sk-newkey999,team-gamma,2025-03-01\n"
         )
 
         al.reload_if_changed()
@@ -91,7 +89,9 @@ class TestAllowListReload:
 
 class TestAllowListEntry:
     def test_entry_fields(self) -> None:
-        entry = AllowListEntry(id="1", api_key="sk-abc", owner="team-a", added="2025-01-01")
+        entry = AllowListEntry(
+            id="1", api_key="sk-abc", owner="team-a", added="2025-01-01"
+        )
         assert entry.id == "1"
         assert entry.api_key == "sk-abc"
         assert entry.owner == "team-a"

@@ -1,14 +1,11 @@
 """Tests for lmgate.auth — key extraction and /auth endpoint."""
 
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 from aiohttp import web
-from aiohttp.test_utils import AioHTTPTestCase, TestClient
 
 from lmgate.auth import extract_key
-from lmgate.allowlist import AllowList
 from lmgate.server import create_app
 
 
@@ -48,10 +45,7 @@ class TestAuthEndpoint:
     @pytest.fixture
     def allowlist_path(self, tmp_path: Path) -> Path:
         path = tmp_path / "allowlist.csv"
-        path.write_text(
-            "id,api_key,owner,added\n"
-            "1,sk-validkey,team-alpha,2025-01-15\n"
-        )
+        path.write_text("id,api_key,owner,added\n1,sk-validkey,team-alpha,2025-01-15\n")
         return path
 
     @pytest.fixture
@@ -72,7 +66,9 @@ class TestAuthEndpoint:
 
     async def test_valid_bearer_returns_200(self, aiohttp_client, app) -> None:
         client = await aiohttp_client(app)
-        resp = await client.get("/auth", headers={"Authorization": "Bearer sk-validkey"})
+        resp = await client.get(
+            "/auth", headers={"Authorization": "Bearer sk-validkey"}
+        )
         assert resp.status == 200
         assert resp.headers.get("X-LMGate-ID") == "1"
 

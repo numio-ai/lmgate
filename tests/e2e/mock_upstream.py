@@ -4,8 +4,6 @@ Returns realistic OpenAI-style responses so the full
 nginx -> auth -> proxy -> njs stats pipeline can be exercised.
 """
 
-import json
-
 from aiohttp import web
 
 

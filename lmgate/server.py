@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 from typing import Any
 
 from aiohttp import web
-
-import logging
 
 from lmgate.allowlist import AllowList
 from lmgate.auth import extract_key

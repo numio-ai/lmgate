@@ -1,9 +1,6 @@
 """Tests for lmgate.config — YAML loading, env var overrides, defaults."""
 
-import os
 from pathlib import Path
-
-import pytest
 
 from lmgate.config import load_config
 
@@ -55,6 +52,7 @@ class TestShutdown:
     async def test_app_cleanup_flushes_stats(self, tmp_path: Path) -> None:
         """App cleanup signal should flush the stats writer."""
         from aiohttp import web
+
         from lmgate.server import create_app
 
         allowlist = tmp_path / "allowlist.csv"

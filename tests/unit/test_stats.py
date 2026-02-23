@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 from aiohttp import web
 
-from lmgate.stats import StatsWriter, build_stats_entry
 from lmgate.server import create_app
+from lmgate.stats import StatsWriter, build_stats_entry
 
 
 class TestBuildStatsEntry:
@@ -22,10 +22,12 @@ class TestBuildStatsEntry:
             "auth_key_header": "Bearer sk-abc123xyz",
             "auth_x_api_key": "",
             "lmgate_internal_id": "1",
-            "response_body": json.dumps({
-                "model": "gpt-4",
-                "usage": {"prompt_tokens": 150, "completion_tokens": 80},
-            }),
+            "response_body": json.dumps(
+                {
+                    "model": "gpt-4",
+                    "usage": {"prompt_tokens": 150, "completion_tokens": 80},
+                }
+            ),
         }
         entry = build_stats_entry(payload)
         assert entry["provider"] == "openai"
@@ -92,7 +94,11 @@ class TestStatsWriter:
     def test_write_single_entry(self, tmp_path: Path) -> None:
         output = tmp_path / "stats.jsonl"
         writer = StatsWriter(str(output))
-        entry = {"timestamp": "2025-06-15T10:30:00Z", "provider": "openai", "input_tokens": 150}
+        entry = {
+            "timestamp": "2025-06-15T10:30:00Z",
+            "provider": "openai",
+            "input_tokens": 150,
+        }
         writer.write(entry)
         writer.flush()
 
@@ -174,10 +180,12 @@ class TestStatsEndpoint:
             "auth_key_header": "Bearer sk-abc123xyz",
             "auth_x_api_key": "",
             "lmgate_internal_id": "1",
-            "response_body": json.dumps({
-                "model": "gpt-4",
-                "usage": {"prompt_tokens": 150, "completion_tokens": 80},
-            }),
+            "response_body": json.dumps(
+                {
+                    "model": "gpt-4",
+                    "usage": {"prompt_tokens": 150, "completion_tokens": 80},
+                }
+            ),
         }
         resp = await client.post("/stats", json=payload)
         assert resp.status == 200

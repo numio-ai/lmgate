@@ -1,5 +1,5 @@
 ---
-status: backlog
+status: done
 ---
 
 # Add Code Quality Tooling (Linter, Formatter, Type Checker)
@@ -51,7 +51,7 @@ Without automated code quality tooling:
 
 ## Validation Steps
 
-1. Install dev dependencies: `pip install -e ".[dev]"`.
+1. Install dev dependencies: `uv pip install -e ".[dev]"`.
 2. Run the lint script: `./scripts/lint.sh`.
 3. Verify zero lint errors and zero type errors.
 4. Run the test suite: `pytest tests/`. Verify all 75 tests pass.

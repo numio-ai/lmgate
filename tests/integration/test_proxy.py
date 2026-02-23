@@ -61,16 +61,12 @@ class TestAuthFlow:
 
     async def test_unknown_key_rejected(self, aiohttp_client, app) -> None:
         client = await aiohttp_client(app)
-        resp = await client.get(
-            "/auth", headers={"Authorization": "Bearer sk-unknown"}
-        )
+        resp = await client.get("/auth", headers={"Authorization": "Bearer sk-unknown"})
         assert resp.status == 403
 
     async def test_x_api_key_auth_accepted(self, aiohttp_client, app) -> None:
         client = await aiohttp_client(app)
-        resp = await client.get(
-            "/auth", headers={"x-api-key": "sk-anthropic-key99"}
-        )
+        resp = await client.get("/auth", headers={"x-api-key": "sk-anthropic-key99"})
         assert resp.status == 200
         assert resp.headers["X-LMGate-ID"] == "2"
 
@@ -97,10 +93,12 @@ class TestStatsFlow:
             "auth_key_header": "Bearer sk-validkey123",
             "auth_x_api_key": "",
             "lmgate_internal_id": "1",
-            "response_body": json.dumps({
-                "model": "gpt-4",
-                "usage": {"prompt_tokens": 150, "completion_tokens": 80},
-            }),
+            "response_body": json.dumps(
+                {
+                    "model": "gpt-4",
+                    "usage": {"prompt_tokens": 150, "completion_tokens": 80},
+                }
+            ),
         }
         resp = await client.post("/stats", json=payload)
         assert resp.status == 200
@@ -129,10 +127,12 @@ class TestStatsFlow:
             "auth_key_header": "",
             "auth_x_api_key": "sk-anthropic-key99",
             "lmgate_internal_id": "2",
-            "response_body": json.dumps({
-                "model": "claude-sonnet-4-5-20250929",
-                "usage": {"input_tokens": 200, "output_tokens": 100},
-            }),
+            "response_body": json.dumps(
+                {
+                    "model": "claude-sonnet-4-5-20250929",
+                    "usage": {"input_tokens": 200, "output_tokens": 100},
+                }
+            ),
         }
         resp = await client.post("/stats", json=payload)
         assert resp.status == 200
@@ -150,16 +150,24 @@ class TestStatsFlow:
             "timestamp": "2025-06-15T10:32:30Z",
             "client_ip": "10.0.0.5",
             "method": "POST",
-            "uri": "/v1/projects/my-project/locations/us-central1/publishers/google/models/gemini-pro:generateContent",
+            "uri": (
+                "/v1/projects/my-project/locations/us-central1"
+                "/publishers/google/models/gemini-pro:generateContent"
+            ),
             "host": "aiplatform.googleapis.com",
             "status": 200,
             "auth_key_header": "Bearer ya29.google-token",
             "auth_x_api_key": "",
             "lmgate_internal_id": "1",
-            "response_body": json.dumps({
-                "candidates": [{"content": {"parts": [{"text": "Hello"}]}}],
-                "usageMetadata": {"promptTokenCount": 300, "candidatesTokenCount": 50},
-            }),
+            "response_body": json.dumps(
+                {
+                    "candidates": [{"content": {"parts": [{"text": "Hello"}]}}],
+                    "usageMetadata": {
+                        "promptTokenCount": 300,
+                        "candidatesTokenCount": 50,
+                    },
+                }
+            ),
         }
         resp = await client.post("/stats", json=payload)
         assert resp.status == 200
@@ -198,9 +206,7 @@ class TestStatsFlow:
 class TestCombinedFlow:
     """Auth + stats together — simulates the full proxy lifecycle."""
 
-    async def test_auth_then_stats(
-        self, aiohttp_client, app, stats_path: Path
-    ) -> None:
+    async def test_auth_then_stats(self, aiohttp_client, app, stats_path: Path) -> None:
         """Simulate: nginx auth_request → proxy → njs stats POST."""
         client = await aiohttp_client(app)
 
@@ -225,10 +231,12 @@ class TestCombinedFlow:
                 "auth_key_header": "Bearer sk-validkey123",
                 "auth_x_api_key": "",
                 "lmgate_internal_id": lmgate_id,
-                "response_body": json.dumps({
-                    "model": "gpt-4",
-                    "usage": {"prompt_tokens": 50, "completion_tokens": 25},
-                }),
+                "response_body": json.dumps(
+                    {
+                        "model": "gpt-4",
+                        "usage": {"prompt_tokens": 50, "completion_tokens": 25},
+                    }
+                ),
             },
         )
         assert stats_resp.status == 200
@@ -271,10 +279,15 @@ class TestCombinedFlow:
                     "auth_key_header": "Bearer sk-validkey123",
                     "auth_x_api_key": "",
                     "lmgate_internal_id": "1",
-                    "response_body": json.dumps({
-                        "model": "gpt-4",
-                        "usage": {"prompt_tokens": 10 * i, "completion_tokens": 5 * i},
-                    }),
+                    "response_body": json.dumps(
+                        {
+                            "model": "gpt-4",
+                            "usage": {
+                                "prompt_tokens": 10 * i,
+                                "completion_tokens": 5 * i,
+                            },
+                        }
+                    ),
                 },
             )
             assert resp.status == 200
